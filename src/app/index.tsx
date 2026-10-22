@@ -1,98 +1,82 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { SEED, STATUSES, STATUS_COLORS } from '../data/seed';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+function ApplicationRow({ application, onAdvance }) {
+  const isOffer = application.status === 'offer';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+  return (
+    <View style={{ paddingVertical: 12 }}>
+      <Text style={{ fontWeight: 'bold' }}>{application.company}</Text>
+      <Text>{application.role}</Text>
+      <Text style={{ color: STATUS_COLORS[application.status] }}>
+        {application.status}
+      </Text>
+      <Pressable
+        onPress={() => onAdvance(application.id)}
+        disabled={isOffer}
+        style={{ opacity: isOffer ? 0.4 : 1 }}
+      >
+        <Text>Advance</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export default function Tracker() {
+  const [applications, setApplications] = useState(SEED);
+  const [company, setCompany] = useState('');
+const [role, setRole] = useState('');
+const canAdd = company.trim() !== '' && role.trim() !== '';
+
+  function advance(id) {
+    setApplications(
+      applications.map((a) => {
+        if (a.id !== id) return a;
+        const nextStatus = STATUSES[STATUSES.indexOf(a.status) + 1];
+        return { ...a, status: nextStatus };
+      })
     );
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
+
+  function addApplication() {
+  const newApp = {
+    id: Date.now().toString(),
+    company: company.trim(),
+    role: role.trim(),
+    status: 'saved',
+    appliedOn: new Date().toISOString().slice(0, 10),
+    notes: '',
+  };
+  setApplications([...applications, newApp]);
+  setCompany('');
+  setRole('');
 }
 
-export default function HomeScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <View style={{ flex: 1, padding: 16 }}>
+        <TextInput
+        placeholder="Company"
+        value={company}
+        onChangeText={setCompany}
+        style={{ borderWidth: 1, padding: 8, marginBottom: 8 }}
+      />
+      <TextInput
+        placeholder="Role"
+        value={role}
+        onChangeText={setRole}
+        style={{ borderWidth: 1, padding: 8, marginBottom: 8 }}
+      />
+      <Pressable
+        onPress={addApplication}
+        disabled={!canAdd}
+        style={{ opacity: canAdd ? 1 : 0.4, marginBottom: 16 }}
+      >
+        <Text>Add</Text>
+      </Pressable>
+      {applications.map((app) => (
+        <ApplicationRow key={app.id} application={app} onAdvance={advance} />
+      ))}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
