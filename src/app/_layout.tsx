@@ -1,13 +1,28 @@
 import { Tabs } from 'expo-router';
+import { TrackerProvider, useTracker } from '../context/TrackerContext';
 
-export default function RootLayout() {
+// INNER: sits inside the provider, so useTracker() works here
+function AppTabs() {
+  const { applications } = useTracker();
+  const countSaved = applications.filter((a) => a.status === 'saved').length;
+
   return (
     <Tabs>
-      {/* name must match the filename — "index" is the app's launch screen */}
-      <Tabs.Screen name="index" options={{ title: 'Tracker' }} />
+      <Tabs.Screen
+        name="index"
+        options={{ title: 'Tracker', tabBarBadge: countSaved }}
+      />
       <Tabs.Screen name="add" options={{ title: 'Add' }} />
       <Tabs.Screen name="dashboard" options={{ title: 'Dashboard' }} />
-      {/* Period 2, Step 5: restructure this file — see the provider snippet there */}
     </Tabs>
+  );
+}
+
+// OUTER: holds the shared list
+export default function RootLayout() {
+  return (
+    <TrackerProvider>
+      <AppTabs />
+    </TrackerProvider>
   );
 }
